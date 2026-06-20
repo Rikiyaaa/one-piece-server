@@ -1005,14 +1005,16 @@
   .db-grid {
     flex: 1; min-height: 0; overflow-y: auto; padding: 10px 12px;
     display: grid; grid-template-columns: repeat(7, 1fr);
+    grid-auto-rows: 120px;
     gap: 6px; align-content: start;
   }
   .card-thumb {
     position: relative; cursor: pointer;
-    border-radius: 6px; overflow: visible;
-    border: 2px solid transparent; aspect-ratio: 2/3;
+    border-radius: 6px; overflow: hidden;
+    border: 2px solid transparent;
     background: var(--surface2);
     transition: border-color 0.1s;
+    width: 100%; height: 100%;
   }
   .card-thumb > .card-face {
     border-radius: 4px; overflow: hidden;
@@ -1021,8 +1023,8 @@
   .card-thumb.selected { border-color: #27ae60; }
   .card-thumb.maxed { opacity: 0.5; }
   .card-thumb.skeleton { animation: skeleton-pulse 1.5s infinite; }
-  /* Event / Stage cards are landscape (3:2) */
-  .card-thumb.card-landscape { aspect-ratio: 3/2; }
+  /* Event / Stage cards span 2 columns to keep landscape proportion */
+  .card-thumb.card-landscape { grid-column: span 2; }
   @keyframes skeleton-pulse { 0%{opacity:.6} 50%{opacity:.3} 100%{opacity:.6} }
   .card-face {
     width: 100%; height: 100%;
