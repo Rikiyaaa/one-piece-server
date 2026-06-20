@@ -47,7 +47,7 @@
   let CARD_MAP = $state<Record<string,CardData>>(Object.fromEntries(DEFAULT_CARD_DB.map(c=>[c.id,c])));
   let dbLoaded = false;
 
-  const COLOR_MAP: Record<string, string> = {red:'#c0392b',green:'#27ae60',blue:'#2980b9',purple:'#8e44ad',black:'#2c3e50',yellow:'#d4ac0d',multicolor:'#7f8c8d'};
+  const COLOR_MAP: Record<string, string> = {red:'#c0392b',green:'#27ae60',blue:'#2980b9',purple:'#8e44ad',black:'#2c3e50',yellow:'#d4ac0d',multicolor:'#7f8c8d','แดง':'#c0392b','เขียว':'#27ae60','ฟ้า':'#2980b9','ม่วง':'#8e44ad','ดำ':'#2c3e50','เหลือง':'#d4ac0d'};
   const ESC_MAP: Record<string, string> = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
 
   function rebuildMap() { 
