@@ -615,7 +615,7 @@
         </div>
         <!-- svelte-ignore a11y_click_events_have_key_events -->
         <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <div class="leader-slot {dbLeader ? '' : 'empty'}" onclick={() => { if (!dbLeader) { filterTypes = new Set(['Leader']); dbPage = 1; } }}>
+        <div class="leader-slot {dbLeader ? '' : 'empty'}" onclick={() => { if (!dbLeader) { filterTypes = new Set(['Leader']); dbPage = 1; } else { openPopup(dbLeader); } }} title={dbLeader ? 'คลิกเพื่อดูรายละเอียด' : ''}>
           {#if dbLeader}
             <!-- svelte-ignore a11y_click_events_have_key_events -->
             <!-- svelte-ignore a11y_no_static_element_interactions -->
