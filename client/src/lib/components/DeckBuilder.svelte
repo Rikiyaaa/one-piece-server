@@ -1004,8 +1004,8 @@
   /* CARD GRID */
   .db-grid {
     flex: 1; min-height: 0; overflow-y: auto; padding: 10px 12px;
-    display: grid; grid-template-columns: repeat(5, 1fr);
-    gap: 8px; align-content: start;
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    gap: 6px; align-content: start;
   }
   .card-thumb {
     position: relative; cursor: pointer;
