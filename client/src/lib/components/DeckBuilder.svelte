@@ -566,7 +566,7 @@
             <!-- svelte-ignore a11y_click_events_have_key_events -->
             <!-- svelte-ignore a11y_no_static_element_interactions -->
             <div
-              class="card-thumb {cnt > 0 ? 'selected' : ''} {maxed ? 'maxed' : ''} {c.type === 'Event' || c.type === 'Stage' ? 'card-landscape' : ''}"
+              class="card-thumb {cnt > 0 ? 'selected' : ''} {maxed ? 'maxed' : ''}"
               onclick={() => openPopup(c)}
               title="{c.name} · {c.type} · {c.color}{c.cost > 0 ? ` · Cost ${c.cost}` : ''}">
               <div class="card-face" use:lazyLoad={c.imageUrl || ''} style={cardBg(c)}>
@@ -615,7 +615,7 @@
         </div>
         <!-- svelte-ignore a11y_click_events_have_key_events -->
         <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <div class="leader-slot {dbLeader ? '' : 'empty'}" onclick={() => { if (!dbLeader) { filterTypes = new Set(['Leader']); dbPage = 1; } }}>
+        <div class="leader-slot {dbLeader ? 'clickable' : 'empty'}" onclick={() => { if (dbLeader) { openPopup(dbLeader); } else { filterTypes = new Set(['Leader']); dbPage = 1; } }}>
           {#if dbLeader}
             <div class="leader-art" style={cardBg(dbLeader)}></div>
             <div class="leader-info">
@@ -662,12 +662,12 @@
                 {@const maxAllowed = 4}
                 {@const isColorWrong = dbLeader && leaderColors.size > 0 && !String(d.color||'').split('/').map((s:string)=>s.trim()).some((c:string) => leaderColors.has(c) || c === 'Multicolor' || c === '')}
                 {@const isDuplWrong = quotaUsed > maxAllowed}
-                <div class="deck-card {isColorWrong ? 'err-color' : ''} {isDuplWrong ? 'err-dupl' : ''} {d.type === 'Event' || d.type === 'Stage' ? 'deck-card-landscape' : ''}">
+                <div class="deck-card {isColorWrong ? 'err-color' : ''} {isDuplWrong ? 'err-dupl' : ''}">
                   <button class="deck-card-rem" onclick={() => dbRemCard(d)} title="ลบ 1 ใบ">−</button>
                   <button class="deck-card-add" onclick={() => addCardWithToast(d)} title="เพิ่ม 1 ใบ">+</button>
                   <!-- svelte-ignore a11y_click_events_have_key_events -->
                   <!-- svelte-ignore a11y_no_static_element_interactions -->
-                  <div class="deck-card-art {d.type === 'Event' || d.type === 'Stage' ? 'deck-card-art-landscape' : ''}" style={cardBg(d)} onclick={() => openPopup(d)}></div>
+                  <div class="deck-card-art" style={cardBg(d)} onclick={() => openPopup(d)}></div>
                   <div class="deck-card-cnt {isDuplWrong ? 'cnt-err' : ''}">×{cnt}</div>
                   {#if isColorWrong}<div class="deck-card-tag">สีผิด</div>{/if}
                   {#if isDuplWrong}<div class="deck-card-tag dupl">เกิน 4</div>{/if}
@@ -1004,17 +1004,15 @@
   /* CARD GRID */
   .db-grid {
     flex: 1; min-height: 0; overflow-y: auto; padding: 10px 12px;
-    display: grid; grid-template-columns: repeat(7, 1fr);
-    grid-auto-rows: 120px;
-    gap: 6px; align-content: start;
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    gap: 8px; align-content: start;
   }
   .card-thumb {
     position: relative; cursor: pointer;
-    border-radius: 6px; overflow: hidden;
-    border: 2px solid transparent;
+    border-radius: 6px; overflow: visible;
+    border: 2px solid transparent; aspect-ratio: 2/3;
     background: var(--surface2);
     transition: border-color 0.1s;
-    width: 100%; height: 100%;
   }
   .card-thumb > .card-face {
     border-radius: 4px; overflow: hidden;
@@ -1023,8 +1021,6 @@
   .card-thumb.selected { border-color: #27ae60; }
   .card-thumb.maxed { opacity: 0.5; }
   .card-thumb.skeleton { animation: skeleton-pulse 1.5s infinite; }
-  /* Event / Stage cards span 2 columns to keep landscape proportion */
-  .card-thumb.card-landscape { grid-column: span 2; }
   @keyframes skeleton-pulse { 0%{opacity:.6} 50%{opacity:.3} 100%{opacity:.6} }
   .card-face {
     width: 100%; height: 100%;
@@ -1067,6 +1063,10 @@
     gap: 8px; padding: 7px 8px; align-items: center;
     border: 1px solid var(--border); border-radius: 8px;
     background: rgba(255,255,255,.03); cursor: pointer; min-height: 60px;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .leader-slot.clickable:hover {
+    border-color: rgba(192,57,43,.6); background: rgba(192,57,43,.06);
   }
   .leader-slot.empty {
     display: flex; align-items: center; justify-content: center; gap: 6px;
@@ -1124,11 +1124,12 @@
   .deck-empty { text-align: center; padding: 24px 8px; color: var(--text3); font-size: 12px; line-height: 1.6; border: 1px dashed var(--border); border-radius: 8px; margin: 4px; }
   .deck-type-header { font-size: 10px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: var(--text3); padding: 6px 4px 2px; }
 
-  /* 3-column card grid for cards in the deck */
-  .deck-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 4px; }
+  /* 4-column card grid for cards in the deck */
+  .deck-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 4px; }
   .deck-card {
     position: relative; border-radius: 7px; overflow: visible;
     border: 2px solid transparent; background: rgba(255,255,255,.025);
+    min-width: 0;
   }
   .deck-card.err-color { border-color: rgba(218,54,51,.7); }
   .deck-card.err-dupl { border-color: rgba(210,153,34,.7); }
@@ -1137,10 +1138,6 @@
     background-size: cover; background-position: center;
     background-color: var(--surface2); cursor: pointer;
   }
-  /* Event / Stage landscape override */
-  .deck-card-art.deck-card-art-landscape { aspect-ratio: 3/2; }
-  /* When the card itself is landscape, make it span all 3 columns */
-  .deck-card.deck-card-landscape { grid-column: 1 / -1; }
   .deck-card-name {
     font-size: 9px; font-weight: 600; color: var(--text2);
     text-align: center; padding: 2px 2px 0; overflow: hidden;
