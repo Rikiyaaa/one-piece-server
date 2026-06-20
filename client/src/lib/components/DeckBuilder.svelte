@@ -566,7 +566,7 @@
             <!-- svelte-ignore a11y_click_events_have_key_events -->
             <!-- svelte-ignore a11y_no_static_element_interactions -->
             <div
-              class="card-thumb {cnt > 0 ? 'selected' : ''} {maxed ? 'maxed' : ''}"
+              class="card-thumb {cnt > 0 ? 'selected' : ''} {maxed ? 'maxed' : ''} {c.type === 'Event' || c.type === 'Stage' ? 'card-landscape' : ''}"
               onclick={() => openPopup(c)}
               title="{c.name} · {c.type} · {c.color}{c.cost > 0 ? ` · Cost ${c.cost}` : ''}">
               <div class="card-face" use:lazyLoad={c.imageUrl || ''} style={cardBg(c)}>
@@ -615,14 +615,10 @@
         </div>
         <!-- svelte-ignore a11y_click_events_have_key_events -->
         <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <div class="leader-slot {dbLeader ? '' : 'empty'}" onclick={() => { if (!dbLeader) { filterTypes = new Set(['Leader']); dbPage = 1; } else { openPopup(dbLeader); } }} title={dbLeader ? 'คลิกเพื่อดูรายละเอียด' : ''}>
+        <div class="leader-slot {dbLeader ? '' : 'empty'}" onclick={() => { if (!dbLeader) { filterTypes = new Set(['Leader']); dbPage = 1; } }}>
           {#if dbLeader}
-            <!-- svelte-ignore a11y_click_events_have_key_events -->
-            <!-- svelte-ignore a11y_no_static_element_interactions -->
-            <div class="leader-art" style={cardBg(dbLeader)} onclick={(e) => { e.stopPropagation(); openPopup(dbLeader); }} title="คลิกเพื่อดูรายละเอียด"></div>
-            <!-- svelte-ignore a11y_click_events_have_key_events -->
-            <!-- svelte-ignore a11y_no_static_element_interactions -->
-            <div class="leader-info" onclick={(e) => { e.stopPropagation(); openPopup(dbLeader); }} title="คลิกเพื่อดูรายละเอียด">
+            <div class="leader-art" style={cardBg(dbLeader)}></div>
+            <div class="leader-info">
               <div class="leader-name">{dbLeader.name}</div>
               <div class="leader-sub">{dbLeader.color} · {dbLeader.rarity}</div>
               <div class="leader-life-tag">❤️ Life: <b>{leaderLife}</b></div>
@@ -666,12 +662,12 @@
                 {@const maxAllowed = 4}
                 {@const isColorWrong = dbLeader && leaderColors.size > 0 && !String(d.color||'').split('/').map((s:string)=>s.trim()).some((c:string) => leaderColors.has(c) || c === 'Multicolor' || c === '')}
                 {@const isDuplWrong = quotaUsed > maxAllowed}
-                <div class="deck-card {isColorWrong ? 'err-color' : ''} {isDuplWrong ? 'err-dupl' : ''}">
+                <div class="deck-card {isColorWrong ? 'err-color' : ''} {isDuplWrong ? 'err-dupl' : ''} {d.type === 'Event' || d.type === 'Stage' ? 'deck-card-landscape' : ''}">
                   <button class="deck-card-rem" onclick={() => dbRemCard(d)} title="ลบ 1 ใบ">−</button>
                   <button class="deck-card-add" onclick={() => addCardWithToast(d)} title="เพิ่ม 1 ใบ">+</button>
                   <!-- svelte-ignore a11y_click_events_have_key_events -->
                   <!-- svelte-ignore a11y_no_static_element_interactions -->
-                  <div class="deck-card-art" style={cardBg(d)} onclick={() => openPopup(d)}></div>
+                  <div class="deck-card-art {d.type === 'Event' || d.type === 'Stage' ? 'deck-card-art-landscape' : ''}" style={cardBg(d)} onclick={() => openPopup(d)}></div>
                   <div class="deck-card-cnt {isDuplWrong ? 'cnt-err' : ''}">×{cnt}</div>
                   {#if isColorWrong}<div class="deck-card-tag">สีผิด</div>{/if}
                   {#if isDuplWrong}<div class="deck-card-tag dupl">เกิน 4</div>{/if}
@@ -1025,6 +1021,8 @@
   .card-thumb.selected { border-color: #27ae60; }
   .card-thumb.maxed { opacity: 0.5; }
   .card-thumb.skeleton { animation: skeleton-pulse 1.5s infinite; }
+  /* Event / Stage cards are landscape (3:2) */
+  .card-thumb.card-landscape { aspect-ratio: 3/2; }
   @keyframes skeleton-pulse { 0%{opacity:.6} 50%{opacity:.3} 100%{opacity:.6} }
   .card-face {
     width: 100%; height: 100%;
@@ -1137,6 +1135,10 @@
     background-size: cover; background-position: center;
     background-color: var(--surface2); cursor: pointer;
   }
+  /* Event / Stage landscape override */
+  .deck-card-art.deck-card-art-landscape { aspect-ratio: 3/2; }
+  /* When the card itself is landscape, make it span all 3 columns */
+  .deck-card.deck-card-landscape { grid-column: 1 / -1; }
   .deck-card-name {
     font-size: 9px; font-weight: 600; color: var(--text2);
     text-align: center; padding: 2px 2px 0; overflow: hidden;
