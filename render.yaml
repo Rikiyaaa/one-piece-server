@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: cardgame-server
+    runtime: node
+    plan: free
+    rootDir: .
+    # Render รัน build/start จาก root ของ repo เพราะ workspace ต้อง build shared ก่อน server
+    buildCommand: npm install && npm run build:shared && npm install --workspace=server && npm run build --workspace=server
+    startCommand: node server/dist/index.js
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: MONGO_URI
+        sync: false   # ใส่ค่าจริงเองใน Render Dashboard (ห้าม commit ค่าจริงลง git)
+      - key: JWT_SECRET
+        sync: false   # ใส่ค่าจริงเองใน Render Dashboard
+      - key: FRONTEND_URL
+        sync: false   # เช่น https://your-app.vercel.app (ใส่หลังจาก deploy client เสร็จ)
