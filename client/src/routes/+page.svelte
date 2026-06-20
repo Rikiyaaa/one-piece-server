@@ -174,6 +174,15 @@
   let ctxCounterVisible = $state(false); let ctxCounterY = $state(0);
   let deckCtxVisible = $state(false);
   let deckCtxX = $state(0); let deckCtxY = $state(0);
+  let searchCtxN = $state(3); // จำนวน Search ที่ปรับได้เองในเมนูคลิกขวา
+  let scryCtxN = $state(3);   // จำนวน Scry ที่ปรับได้เองในเมนูคลิกขวา
+  // ── ป๊อปอัพลากปรับจำนวน Search/Scry (ลากซ้าย-ขวาด้วยเมาส์/นิ้ว) ──
+  let ctxScrubVisible = $state(false);
+  let ctxScrubType = $state<'search'|'scry'>('search');
+  let ctxScrubMax = $state(99);  // เพดานสูงสุด = จำนวนการ์ดในกองตอนเปิดป๊อปอัพ (เริ่มที่ 1 เสมอ ปรับได้แค่เลขปลายช่วง)
+  let ctxScrubDragging = $state(false);
+  let ctxScrubStartX = 0;   // ตำแหน่ง pointer ตอนเริ่มลาก (ไม่ต้อง reactive)
+  let ctxScrubStartVal = 0; // ค่าตัวเลขตอนเริ่มลาก
   let tooltipVisible = $state(false);
   let tooltipData = $state<CardData|null>(null);
   let tooltipX = $state(0); let tooltipY = $state(0);
@@ -1951,13 +1960,42 @@
     if(act==='shuffle') shuffleDeck();
     if(act==='draw') drawCard();
     if(act==='drawBottom') drawFromBottom();
-    if(act==='search3') startSearch(3);
-    if(act==='search5') startSearch(5);
     if(act==='searchDeck1') startSearchDeck(1);
     if(act==='searchDeck') startSearchDeck(deckSearchPickCount || 1);
-    if(act==='scry3') startScry(3);
-    if(act==='scry5') startScry(5);
-    if(act==='scry7') startScry(7);
+  }
+  // เปิดป๊อปอัพลากปรับจำนวนสำหรับ Search/Scry — จำกัดสูงสุดตามจำนวนการ์ดในกองตอนนั้น
+  function openCtxScrub(type:'search'|'scry') {
+    hideCtx();
+    ctxScrubType = type;
+    ctxScrubMax = Math.max(1, myDeck.length);
+    // กันค่าที่ค้างไว้เกินจำนวนการ์ดที่มีจริงตอนนี้
+    if(type==='search' && searchCtxN > ctxScrubMax) searchCtxN = ctxScrubMax;
+    if(type==='scry' && scryCtxN > ctxScrubMax) scryCtxN = ctxScrubMax;
+    ctxScrubVisible = true;
+  }
+  function ctxScrubDown(e:PointerEvent) {
+    ctxScrubDragging = true;
+    ctxScrubStartX = e.clientX;
+    ctxScrubStartVal = ctxScrubType==='search' ? searchCtxN : scryCtxN;
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  }
+  function ctxScrubMove(e:PointerEvent) {
+    if(!ctxScrubDragging) return;
+    const delta = e.clientX - ctxScrubStartX;
+    const steps = Math.round(delta / 14); // ลาก ~14px ต่อ 1 หน่วย (ขวา=เพิ่ม, ซ้าย=ลด) — เริ่มที่ 1 เสมอ ปรับได้แค่เลขจำนวน (ปลายช่วง)
+    const next = Math.max(1, Math.min(ctxScrubMax, ctxScrubStartVal + steps));
+    if(ctxScrubType==='search') searchCtxN = next; else scryCtxN = next;
+  }
+  function ctxScrubUp() {
+    ctxScrubDragging = false;
+  }
+  function ctxScrubStep(delta:number) {
+    if(ctxScrubType==='search') searchCtxN = Math.max(1, Math.min(ctxScrubMax, searchCtxN + delta));
+    else scryCtxN = Math.max(1, Math.min(ctxScrubMax, scryCtxN + delta));
+  }
+  function ctxScrubConfirm() {
+    ctxScrubVisible = false;
+    if(ctxScrubType==='search') startSearch(searchCtxN); else startScry(scryCtxN);
   }
 
   // ════════════════════════════════════════════════
@@ -2523,6 +2561,7 @@
       if(selectedCids.size > 0) { clearSelection(); e.preventDefault(); return; }
       if(drawingLine) drawingLine=null;
       if(ctxVisible||deckCtxVisible) hideCtx();
+      if(ctxScrubVisible) ctxScrubVisible=false;
       if(detailData) detailData=null;
       if(peekLifeVisible) peekLifeVisible=false;
       if(scryVisible) closeScry();
@@ -2982,23 +3021,40 @@
   <div class="ctx-item" onclick={()=>deckCtxAct('draw')}>🗂 จั่วการ์ด</div>
   <div class="ctx-item" onclick={()=>deckCtxAct('drawBottom')}>⬇ จั่วจากใต้กอง</div>
   <div class="ctx-sep"></div>
-  <div class="ctx-item" onclick={()=>deckCtxAct('search3')}>🔍 Search 3</div>
-  <div class="ctx-item" onclick={()=>deckCtxAct('search5')}>🔍 Search 5</div>
+  <div class="ctx-item" onclick={()=>openCtxScrub('search')}>🔍 Search {searchCtxN}</div>
   <div class="ctx-item ctx-item-deck-search" onclick={()=>startSearchDeck(1)}>🃏 Search Deck</div>
   <div class="ctx-sep"></div>
-  <div class="ctx-item ctx-item-scry" onclick={()=>deckCtxAct('scry3')}>👁 Scry 3</div>
-  <div class="ctx-item ctx-item-scry" onclick={()=>deckCtxAct('scry5')}>👁 Scry 5</div>
-  <div class="ctx-item ctx-item-scry" onclick={()=>deckCtxAct('scry7')}>👁 Scry 7</div>
+  <div class="ctx-item ctx-item-scry" onclick={()=>openCtxScrub('scry')}>👁 Scry {scryCtxN}</div>
+</div>
+{/if}
+
+<!-- CTX SCRUB POPUP: ลากซ้าย-ขวาเพื่อปรับจำนวน Search/Scry -->
+{#if ctxScrubVisible}
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<div class="ctx-scrub-overlay" onclick={()=>ctxScrubVisible=false}>
   <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <div class="ctx-item-scry-custom" onclick={(e)=>e.stopPropagation()}>
-    <input
-      class="ctx-scry-input"
-      type="number"
-      min="1" max="50"
-      placeholder="Scry กำหนดเอง"
-      onchange={(e)=>{ const v=parseInt((e.target as HTMLInputElement).value); if(v>0){ hideCtx(); startScry(v); } }}
-    />
+  <div class="ctx-scrub-panel" class:scrub-scry={ctxScrubType==='scry'} onclick={(e)=>e.stopPropagation()}>
+    <div class="ctx-scrub-title">{ctxScrubType==='search' ? '🔍 Search' : '👁 Scry'}</div>
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      class="ctx-scrub-track"
+      class:dragging={ctxScrubDragging}
+      style="touch-action:none"
+      onpointerdown={ctxScrubDown}
+      onpointermove={ctxScrubMove}
+      onpointerup={ctxScrubUp}
+      onpointercancel={ctxScrubUp}
+    >
+      <button type="button" class="ctx-scrub-arrow" onclick={(e)=>{e.stopPropagation(); ctxScrubStep(-1);}}>‹</button>
+      <span class="ctx-scrub-num">{ctxScrubType==='search' ? searchCtxN : scryCtxN}</span>
+      <button type="button" class="ctx-scrub-arrow" onclick={(e)=>{e.stopPropagation(); ctxScrubStep(1);}}>›</button>
+    </div>
+    <div class="ctx-scrub-hint">ลากซ้าย-ขวาเพื่อปรับจำนวน (1–{ctxScrubMax})</div>
+    <div class="ctx-scrub-btns">
+      <button type="button" class="ctx-scrub-cancel" onclick={()=>ctxScrubVisible=false}>ยกเลิก</button>
+      <button type="button" class="ctx-scrub-confirm" onclick={ctxScrubConfirm}>{ctxScrubType==='search' ? 'ค้นหา' : 'ดูการ์ด'}</button>
+    </div>
   </div>
 </div>
 {/if}
@@ -3653,15 +3709,44 @@
   .ctx-item-deck-search:hover{background:rgba(210,153,34,.15)}
   .ctx-item-scry{color:#b48fff;font-weight:600}
   .ctx-item-scry:hover{background:rgba(150,100,255,.15)}
-  .ctx-item-scry-custom{padding:4px 8px 2px}
-  .ctx-scry-input{
-    width:100%;height:26px;border-radius:6px;border:1px solid var(--border2);
-    background:var(--surface2);color:var(--text);font-size:12px;
-    padding:0 8px;outline:none;box-sizing:border-box;
-  }
-  .ctx-scry-input:focus{border-color:#b48fff}
   .ctx-item-search-trash{color:#f97583;font-weight:700}
   .ctx-item-search-trash:hover{background:rgba(218,54,51,.15)}
+
+  /* ── CTX SCRUB POPUP (ลากซ้าย-ขวาปรับจำนวน Search/Scry) ── */
+  .ctx-scrub-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px}
+  .ctx-scrub-panel{
+    width:220px;background:var(--surface);border:1px solid var(--border2);border-radius:14px;
+    box-shadow:0 20px 60px rgba(0,0,0,.85),0 0 0 1px rgba(80,160,255,.1);
+    padding:16px;display:flex;flex-direction:column;gap:10px;align-items:center;
+  }
+  .ctx-scrub-panel.scrub-scry{box-shadow:0 20px 60px rgba(0,0,0,.85),0 0 0 1px rgba(180,143,255,.15)}
+  .ctx-scrub-title{font-size:13px;font-weight:800;color:var(--text)}
+  .ctx-scrub-panel.scrub-scry .ctx-scrub-title{color:#b48fff}
+  .ctx-scrub-track{
+    width:100%;height:54px;border-radius:10px;border:1px solid var(--border2);
+    background:var(--surface2);display:flex;align-items:center;justify-content:space-between;
+    padding:0 10px;cursor:ew-resize;user-select:none;transition:border-color .12s,background .12s;
+  }
+  .ctx-scrub-track:hover{border-color:var(--blue)}
+  .ctx-scrub-track.dragging{border-color:var(--blue);background:rgba(80,160,255,.08)}
+  .ctx-scrub-panel.scrub-scry .ctx-scrub-track:hover,
+  .ctx-scrub-panel.scrub-scry .ctx-scrub-track.dragging{border-color:#b48fff;background:rgba(180,143,255,.08)}
+  .ctx-scrub-num{font-size:26px;font-weight:800;color:var(--text);min-width:40px;text-align:center;pointer-events:none}
+  .ctx-scrub-arrow{
+    width:26px;height:26px;border-radius:6px;border:1px solid var(--border2);background:var(--surface3,#222);
+    color:var(--text2);font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;
+    cursor:pointer;padding:0;flex-shrink:0;
+  }
+  .ctx-scrub-arrow:hover{background:var(--blue);border-color:var(--blue);color:#fff}
+  .ctx-scrub-panel.scrub-scry .ctx-scrub-arrow:hover{background:#b48fff;border-color:#b48fff;color:#fff}
+  .ctx-scrub-hint{font-size:10px;color:var(--text3)}
+  .ctx-scrub-btns{display:flex;gap:8px;width:100%}
+  .ctx-scrub-cancel{flex:1;height:32px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;transition:all .12s}
+  .ctx-scrub-cancel:hover{background:var(--border2);color:var(--text)}
+  .ctx-scrub-confirm{flex:1;height:32px;border-radius:8px;border:1px solid var(--blue);background:rgba(80,160,255,.15);color:var(--blue2,#7ab8ff);font-size:12px;font-weight:700;cursor:pointer;transition:all .12s}
+  .ctx-scrub-confirm:hover{background:var(--blue);color:#fff}
+  .ctx-scrub-panel.scrub-scry .ctx-scrub-confirm{border-color:#b48fff;background:rgba(180,143,255,.15);color:#d0b0ff}
+  .ctx-scrub-panel.scrub-scry .ctx-scrub-confirm:hover{background:#b48fff;color:#111}
 
   /* ── SCRY POPUP ── */
   #scry-overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:5700;display:flex;align-items:center;justify-content:center;padding:20px}
