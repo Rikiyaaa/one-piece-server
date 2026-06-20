@@ -617,8 +617,12 @@
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div class="leader-slot {dbLeader ? '' : 'empty'}" onclick={() => { if (!dbLeader) { filterTypes = new Set(['Leader']); dbPage = 1; } }}>
           {#if dbLeader}
-            <div class="leader-art" style={cardBg(dbLeader)}></div>
-            <div class="leader-info">
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <div class="leader-art" style={cardBg(dbLeader)} onclick={(e) => { e.stopPropagation(); openPopup(dbLeader); }} title="คลิกเพื่อดูรายละเอียด"></div>
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <div class="leader-info" onclick={(e) => { e.stopPropagation(); openPopup(dbLeader); }} title="คลิกเพื่อดูรายละเอียด">
               <div class="leader-name">{dbLeader.name}</div>
               <div class="leader-sub">{dbLeader.color} · {dbLeader.rarity}</div>
               <div class="leader-life-tag">❤️ Life: <b>{leaderLife}</b></div>
