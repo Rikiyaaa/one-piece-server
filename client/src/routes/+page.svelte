@@ -1135,8 +1135,8 @@
     if(!snapOn) return {x,y,zone:null};
     const zone=findZoneAt(x+CARD_W/2,y+CARD_H/2,'you');
     if(!zone) { if(cards[cid]) cards[cid].zoneId=undefined; return {x,y,zone:null}; }
-    // โซน life และ character ไม่มีแม่เหล็กดูด — วางตรงไหนอยู่ตรงนั้น แค่ผูก zoneId ให้ถูกต้อง
-    if(zone.id==='you-life'||zone.id==='opp-life'||zone.id==='you-character'||zone.id==='opp-character') {
+    // โซน life, character, leader, stage ไม่มีแม่เหล็กดูด — วางตรงไหนอยู่ตรงนั้น แค่ผูก zoneId ให้ถูกต้อง
+    if(zone.id==='you-life'||zone.id==='opp-life'||zone.id==='you-character'||zone.id==='opp-character'||zone.id==='you-leader'||zone.id==='opp-leader'||zone.id==='you-stage'||zone.id==='opp-stage') {
       if(cards[cid]) cards[cid].zoneId=zone.id;
       return {x,y,zone};
     }
