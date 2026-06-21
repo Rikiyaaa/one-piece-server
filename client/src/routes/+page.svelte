@@ -1152,6 +1152,18 @@
     });
   }
 
+  // ตรวจว่าตำแหน่งเมาส์ (screen coords) อยู่เหนือโซน HAND (มือ) อยู่หรือไม่ — ใช้ตอนลากการ์ดบนบอร์ด
+  function isOverHandArea(clientX:number, clientY:number) {
+    const el = document.getElementById('hand-area');
+    if(!el) return false;
+    const r = el.getBoundingClientRect();
+    return clientX>=r.left && clientX<=r.right && clientY>=r.top && clientY<=r.bottom;
+  }
+
+  function setHandHL(active:boolean) {
+    document.getElementById('hand-area')?.classList.toggle('drag-over-hand', active);
+  }
+
   function getDefaultZone(data:CardData) {
     if(data.type==='Leader') return 'you-leader';
     if(data.type==='Stage') return 'you-stage';
@@ -1209,6 +1221,7 @@
       let pickedUpFromHand=false; // จะเป็น true ก็ต่อเมื่อมีการลากจริงๆ เท่านั้น (ไม่ใช่แค่คลิก)
       let moved=false;
       let dragGhostActive=false;
+      let overHandZone=false; // ลากการ์ดมาทับโซน HAND (มือ) อยู่หรือไม่ — DON!! ไม่นับ เพราะ DON ไม่มีในมือ
       const startX=e.clientX, startY=e.clientY;
 
       const onMove=(e2:MouseEvent)=>{
@@ -1250,7 +1263,11 @@
         const nx=pf.x-CARD_W/2, ny=pf.y-CARD_H/2;
         const cur = cards[cid];
         if(cur) { cur.x = nx; cur.y = ny; }
-        setZoneHL(snapOn?findZoneAt(nx+CARD_W/2,ny+CARD_H/2,'you'):null);
+
+        // ลากการ์ด (ที่ไม่ใช่ DON!!) มาทับโซน HAND (มือ) → ไฮไลท์โซนมือแทนโซนบนบอร์ด
+        overHandZone = !card.isDon && isOverHandArea(e2.clientX,e2.clientY);
+        if(overHandZone) { setZoneHL(null); setHandHL(true); }
+        else { setHandHL(false); setZoneHL(snapOn?findZoneAt(nx+CARD_W/2,ny+CARD_H/2,'you'):null); }
 
         const nowDrag = Date.now();
         if(dragGhostActive && nowDrag - lastDragMoveSend >= 33) {
@@ -1265,7 +1282,7 @@
           send('card_drag_end', { cid });
           dragGhostActive = false;
         }
-        el.classList.remove('dragging'); setZoneHL(null);
+        el.classList.remove('dragging'); setZoneHL(null); setHandHL(false);
 
         // คลิกเฉยๆ ไม่ได้ลาก (การ์ดในมือ) → ไม่ต้องทำอะไร ปล่อยให้อยู่ในมือต่อไป
         if(fromHand && !pickedUpFromHand) return;
@@ -1276,6 +1293,22 @@
 
         const cur = cards[cid];
         if(!cur) return;
+
+        // ปล่อยการ์ดทับโซน HAND (มือ) → ส่งการ์ดกลับเข้ามือ แทนที่จะวางบนบอร์ด (DON!! ไม่นับ เพราะ DON ไม่มีในมือ)
+        if(overHandZone && !cur.isDon) {
+          const prevZoneIdHand = cur.zoneId;
+          send('card_remove',{cid});
+          cur.inHand=true; cur.x=undefined; cur.y=undefined; cur.zoneId=undefined;
+          if(!myHand.includes(cid)) myHand.push(cid);
+          // ถ้าการ์ดเคยอยู่ในสุสาน ต้องเอาออกจาก myTrash ด้วย ให้ count ตรงกับของจริง
+          if(prevZoneIdHand === 'you-trash') {
+            const idx = myTrash.indexOf(cur.data.id);
+            if (idx !== -1) { myTrash.splice(idx, 1); syncTrash(); }
+          }
+          updateHandCount(); syncHandState();
+          addLog(`ไปมือ: ${cur.data.name}`,'you');
+          return;
+        }
 
         const prevZoneId = cur.zoneId;
         const s=snapCard(cid,cur.x||0,cur.y||0);
@@ -3606,7 +3639,8 @@
   #opp-hand-cards{display:flex;align-items:center;gap:4px;flex-wrap:wrap;padding:2px 0;max-width:244px}
   .opp-hand-card{width:28px;height:38px;border-radius:3px;background-image:url("https://s6.imgcdn.dev/Ybr42q.jpg");background-size:cover;background-position:center;border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-size:12px;opacity:.8;flex-shrink:0}
   .opp-hand-label{font-size:10px;color:rgba(218,54,51,.6);font-weight:700;letter-spacing:1px}
-  #hand-area{--card-w:86px;--card-h:120px;height:166px;background:rgba(0,0,0,.45);border-top:1px solid var(--border);display:flex;align-items:flex-end;justify-content:center;padding:0 54px 14px 20px;gap:8px;position:relative;z-index:5;flex-shrink:0;overflow-x:auto;overflow-y:clip;overflow-clip-margin:60px;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+  #hand-area{--card-w:86px;--card-h:120px;height:166px;background:rgba(0,0,0,.45);border-top:1px solid var(--border);display:flex;align-items:flex-end;justify-content:center;padding:0 54px 14px 20px;gap:8px;position:relative;z-index:5;flex-shrink:0;overflow-x:auto;overflow-y:clip;overflow-clip-margin:60px;scrollbar-width:thin;scrollbar-color:var(--border) transparent;transition:background .15s,box-shadow .15s}
+  #hand-area.drag-over-hand{background:rgba(56,139,253,.18);box-shadow:inset 0 0 0 2px rgba(56,139,253,.72)}
   .hand-label{position:absolute;top:5px;left:12px;font-size:9px;font-weight:700;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase}
   .hand-count{position:absolute;top:5px;right:12px;font-size:10px;color:var(--text3)}
   #hand-area :global(.card){position:relative!important;flex-shrink:0;transition:transform .15s ease-out,box-shadow .15s;top:0!important;left:0!important;margin-bottom:4px;transform-origin:bottom center}
