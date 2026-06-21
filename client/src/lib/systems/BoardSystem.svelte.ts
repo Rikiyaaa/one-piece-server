@@ -153,8 +153,15 @@ class BoardSystem {
       if (c) c.zoneId = undefined;
       return { x, y, zone: null };
     }
-    // life zones have no magnetic snap — leave position, just tag zoneId
-    if (zone.id === 'you-life' || zone.id === 'opp-life') {
+    // life/leader/stage zones have no magnetic snap — leave position, just tag zoneId
+    if (
+      zone.id === 'you-life' ||
+      zone.id === 'opp-life' ||
+      zone.id === 'you-leader' ||
+      zone.id === 'opp-leader' ||
+      zone.id === 'you-stage' ||
+      zone.id === 'opp-stage'
+    ) {
       const c = cardStateSystem.cards[cid];
       if (c) c.zoneId = zone.id;
       return { x, y, zone };
